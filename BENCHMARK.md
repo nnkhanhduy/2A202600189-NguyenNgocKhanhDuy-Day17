@@ -1,34 +1,41 @@
-# BENCHMARK REPORT
+# 📊 BÁO CÁO ĐÁNH GIÁ AGENT (BENCHMARK REPORT)
 
-## 1. Kết quả chạy 10 Multi-turn Conversations
+## 1. Tóm tắt kết quả (Executive Summary)
 
-| # | Scenario | No-memory result (Pass/Fail) | With-memory result (Pass/Fail) | With-memory Answer Snippet |
-|---|---|---|---|---|
-| 1 | Recall user name after 6 turns | Fail | **Pass** | Có chứ, bạn tên là Linh! Nếu bạn cần gì thêm, hãy ... |
-| 2 | Allergy conflict update | Pass | **Pass** | Bạn bị dị ứng với đậu nành. Nếu bạn cần thêm thông... |
-| 3 | Recall previous debug lesson (Episodic/Semantic) | Pass | **Pass** | Đúng rồi, bạn đã từng hỏi về lỗi 'port is already ... |
-| 4 | Retrieve FAQ chunk - Refund | Fail | **Pass** | Thời hạn cụ thể để yêu cầu hoàn tiền là 30 ngày kể... |
-| 5 | Retrieve FAQ chunk - Password | Fail | **Pass** | Bạn cần vào mục **Cài đặt** (Settings) trên thiết ... |
-| 6 | Episodic - Decision making | Fail | **Pass** | Bạn đã quyết định chọn gói Pro vì nó nhiều tính nă... |
-| 7 | Hobby update & recall | Pass | **Pass** | Dựa trên sở thích đọc sách của bạn, có một số hoạt... |
-| 8 | Multiple facts update | Fail | **Pass** | Có, bạn 25 tuổi và sống ở Đà Nẵng. Nếu bạn cần thô... |
-| 9 | Job conflict update | Fail | **Pass** | Nghề nghiệp hiện tại của bạn là Developer. Nếu bạn... |
-| 10 | Trim/token budget test | Fail | **Pass** | Màu yêu thích của bạn là màu xanh lá! |
+- **Phiên bản Agent:** Multi-Memory LangGraph Agent (4 layers)
+- **Tổng số kịch bản test:** 10
+- **Tỉ lệ thành công (Không bộ nhớ):** 3/10 (30%)
+- **Tỉ lệ thành công (Có bộ nhớ):** 10/10 (100%)
+- **Hiệu quả cải thiện:** +70% thành công nhờ hệ thống bộ nhớ đa tầng.
 
-## 2. Reflection privacy/limitations
+## 2. Chi tiết kết quả 10 Multi-turn Conversations
 
-### 2.1. Memory nào giúp agent nhất?
-- **Long-term Profile & Semantic Memory**: Giúp cá nhân hóa cao (nhớ tên, sở thích, dị ứng) và cung cấp kiến thức thực tế (FAQ, chính sách) mà mô hình gốc không biết.
+| ID | Kịch bản kiểm thử | Nhóm Memory chính | No-memory | With-memory | Kết quả chi tiết (With-memory) |
+|---|---|---|---|---|---|
+| 1 | Recall user name after 6 turns | Profile/Short-term | Fail | **Pass** | Có chứ! Bạn tên là Linh. Nếu bạn cần thêm thông tin gì, hãy cho tôi biết nhé! |
+| 2 | Allergy conflict update | Profile (Conflict) | Pass | **Pass** | Bạn bị dị ứng với đậu nành. Nếu bạn cần thông tin hoặc gợi ý về thực phẩm an toàn, hãy cho tôi biết ... |
+| 3 | Recall previous debug lesson (Episodic/Semantic) | Episodic/Semantic | Pass | **Pass** | Đúng rồi, bạn đã từng hỏi về lỗi 'port is already allocated' khi chạy Docker. Nếu bạn cần thêm thông... |
+| 4 | Retrieve FAQ chunk - Refund | Semantic (FAQ) | Fail | **Pass** | Thời hạn cụ thể để yêu cầu hoàn tiền là 30 ngày kể từ ngày mua hàng. |
+| 5 | Retrieve FAQ chunk - Password | Semantic (FAQ) | Fail | **Pass** | Bạn cần vào mục **Cài đặt** (Settings) trên thiết bị hoặc ứng dụng của bạn. Sau đó, tìm và chọn mục ... |
+| 6 | Episodic - Decision making | Episodic (Decision) | Fail | **Pass** | Bạn đã quyết định chọn gói Pro vì nó nhiều tính năng hơn. Nếu bạn cần thêm thông tin hoặc hỗ trợ gì ... |
+| 7 | Hobby update & recall | Profile/Episodic | Pass | **Pass** | Dựa trên sở thích đọc sách của bạn, có một số hoạt động thú vị bạn có thể làm vào cuối tuần:  1. **Đ... |
+| 8 | Multiple facts update | Profile (Multi-fact) | Fail | **Pass** | Có, bạn 25 tuổi và sống ở Đà Nẵng. Nếu bạn cần thông tin hay hỗ trợ gì thêm, hãy cho tôi biết nhé! |
+| 9 | Job conflict update | Profile (Conflict) | Fail | **Pass** | Nghề nghiệp hiện tại của bạn là Developer. Nếu bạn cần thông tin hoặc hỗ trợ liên quan đến công việc... |
+| 10 | Trim/token budget test | Short-term (Budget) | Fail | **Pass** | Màu yêu thích của bạn là màu xanh lá! |
 
-### 2.2. Memory nào rủi ro nhất nếu retrieve sai?
-- **Semantic Memory (ChromaDB)**: Rủi ro nhất khi retrieve sai tài liệu hướng dẫn (ví dụ: tư vấn sai chính sách hoàn tiền có thể gây thiệt hại cho doanh nghiệp).
-- **Long-term Profile**: Cực kỳ rủi ro nếu hệ thống chia sẻ nhầm profile của User A sang cho User B (lộ PII như địa chỉ, dị ứng, thông tin cá nhân).
+## 3. Phân tích và Reflection (Theo Rubric)
 
-### 2.3. Quản lý PII, Consent, và Deletion
-- Khi lưu PII (Thông tin định danh cá nhân) vào Profile hoặc Episodic, hệ thống cần cơ chế mã hóa hoặc Consent rõ ràng từ người dùng.
-- Nếu User yêu cầu xóa memory (Right to be Forgotten), ta phải xóa ở **cả 4 backends**: Xóa lịch sử (Short-term), Xóa tệp JSON profile/episodic, và xóa các vectors cá nhân khỏi DB nếu có.
+### 3.1. Phân tích vai trò các tầng bộ nhớ
+- **Long-term Profile**: Giúp Agent cá nhân hóa cuộc hội thoại (Case #1, #8). Cơ chế ghi đè Fact giúp xử lý mâu thuẫn thông tin (Case #2, #9).
+- **Episodic Memory**: Ghi lại các quyết định quan trọng (Case #6) giúp Agent không hỏi lại những gì đã thống nhất.
+- **Semantic Memory**: Cung cấp kiến thức chuyên biệt (Case #4, #5) mà model GPT không được train sẵn (vd: chính sách công ty cụ thể).
+- **Short-term Memory**: Duy trì mạch hội thoại và tự động cắt tỉa (Trim) để tối ưu chi phí và tránh lỗi tràn context (Case #10).
 
-### 2.4. Limitation kỹ thuật của kiến trúc hiện tại
-- Việc sử dụng Prompt Injection (nhét toàn bộ profile, episodic vào prompt) không scale được nếu profile của người dùng quá lớn. Dễ bị vượt token limit của LLM.
-- Token Trim ở Short-term đang dùng word-count x 1.3, không hoàn toàn chính xác như dùng thư viện tiktoken.
+### 3.2. Quyền riêng tư (Privacy) & Quản lý PII
+- **Rủi ro**: Các thông tin như địa chỉ, dị ứng, nghề nghiệp (PII) được lưu dưới dạng văn bản thuần trong JSON. Nếu hệ thống bị xâm nhập, dữ liệu này rất nhạy cảm.
+- **Giải pháp**: Cần cơ chế mã hóa dữ liệu khi lưu (At-rest encryption) và xóa dữ liệu định kỳ (TTL). Khi người dùng yêu cầu 'Quên tôi đi', hệ thống phải xóa sạch cả file JSON và Vector DB.
+
+### 3.3. Giới hạn kỹ thuật (Limitations)
+- Hệ thống hiện tại dùng 'Prompt Injection' để nhồi bộ nhớ vào ngữ cảnh. Nếu Profile quá lớn, chi phí Token sẽ tăng rất nhanh.
+- Token Trim ở Short-term đang dùng thư viện tiktoken chuẩn xác.
 - LLM extraction tốn chi phí và có độ trễ cao (phải gọi thêm 1 API call với Structured Output sau mỗi lượt hội thoại để cập nhật memory).

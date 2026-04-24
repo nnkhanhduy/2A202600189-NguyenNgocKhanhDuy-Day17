@@ -141,34 +141,61 @@ def generate_report():
     print("Running with memory...")
     mem_results = run_scenarios(enable_memory=True)
     
+    no_mem_pass = sum(1 for x in no_mem_results if x["pass"] == "Pass")
+    with_mem_pass = sum(1 for x in mem_results if x["pass"] == "Pass")
+
     # Generate Markdown
-    md_content = "# BENCHMARK REPORT\n\n"
-    md_content += "## 1. Kết quả chạy 10 Multi-turn Conversations\n\n"
-    md_content += "| # | Scenario | No-memory result (Pass/Fail) | With-memory result (Pass/Fail) | With-memory Answer Snippet |\n"
-    md_content += "|---|---|---|---|---|\n"
+    md_content = "# 📊 BÁO CÁO ĐÁNH GIÁ AGENT (BENCHMARK REPORT)\n\n"
     
+    md_content += "## 1. Tóm tắt kết quả (Executive Summary)\n\n"
+    md_content += f"- **Phiên bản Agent:** Multi-Memory LangGraph Agent (4 layers)\n"
+    md_content += f"- **Tổng số kịch bản test:** {len(scenarios)}\n"
+    md_content += f"- **Tỉ lệ thành công (Không bộ nhớ):** {no_mem_pass}/{len(scenarios)} ({no_mem_pass*10}%)\n"
+    md_content += f"- **Tỉ lệ thành công (Có bộ nhớ):** {with_mem_pass}/{len(scenarios)} ({with_mem_pass*10}%)\n"
+    md_content += f"- **Hiệu quả cải thiện:** +{(with_mem_pass - no_mem_pass)*10}% thành công nhờ hệ thống bộ nhớ đa tầng.\n\n"
+    md_content += "## 2. Chi tiết kết quả 10 Multi-turn Conversations\n\n"
+    md_content += "| ID | Kịch bản kiểm thử | Nhóm Memory chính | No-memory | With-memory | Kết quả chi tiết (With-memory) |\n"
+    md_content += "|---|---|---|---|---|---|\n"
+    
+    memory_mapping = {
+        1: "Profile/Short-term",
+        2: "Profile (Conflict)",
+        3: "Episodic/Semantic",
+        4: "Semantic (FAQ)",
+        5: "Semantic (FAQ)",
+        6: "Episodic (Decision)",
+        7: "Profile/Episodic",
+        8: "Profile (Multi-fact)",
+        9: "Profile (Conflict)",
+        10: "Short-term (Budget)"
+    }
+
     for i in range(len(scenarios)):
         no_mem = no_mem_results[i]
         mem = mem_results[i]
-        ans_snippet = mem['answer'][:50] + "..." if len(mem['answer']) > 50 else mem['answer']
+        category = memory_mapping.get(i+1, "General")
+        ans_snippet = mem['answer'][:100] + "..." if len(mem['answer']) > 100 else mem['answer']
         
-        md_content += f"| {i+1} | {mem['name']} | {no_mem['pass']} | **{mem['pass']}** | {ans_snippet} |\n"
+        no_label = "Fail" if no_mem['pass'] == "Fail" else "Pass"
+        mem_label = "Fail" if mem['pass'] == "Fail" else "Pass"
         
-    md_content += "\n## 2. Reflection privacy/limitations\n\n"
-    md_content += "### 2.1. Memory nào giúp agent nhất?\n"
-    md_content += "- **Long-term Profile & Semantic Memory**: Giúp cá nhân hóa cao (nhớ tên, sở thích, dị ứng) và cung cấp kiến thức thực tế (FAQ, chính sách) mà mô hình gốc không biết.\n\n"
+        md_content += f"| {i+1} | {mem['name']} | {category} | {no_label} | **{mem_label}** | {ans_snippet} |\n"
+        
+    md_content += "\n## 3. Phân tích và Reflection (Theo Rubric)\n\n"
     
-    md_content += "### 2.2. Memory nào rủi ro nhất nếu retrieve sai?\n"
-    md_content += "- **Semantic Memory (ChromaDB)**: Rủi ro nhất khi retrieve sai tài liệu hướng dẫn (ví dụ: tư vấn sai chính sách hoàn tiền có thể gây thiệt hại cho doanh nghiệp).\n"
-    md_content += "- **Long-term Profile**: Cực kỳ rủi ro nếu hệ thống chia sẻ nhầm profile của User A sang cho User B (lộ PII như địa chỉ, dị ứng, thông tin cá nhân).\n\n"
+    md_content += "### 3.1. Phân tích vai trò các tầng bộ nhớ\n"
+    md_content += "- **Long-term Profile**: Giúp Agent cá nhân hóa cuộc hội thoại (Case #1, #8). Cơ chế ghi đè Fact giúp xử lý mâu thuẫn thông tin (Case #2, #9).\n"
+    md_content += "- **Episodic Memory**: Ghi lại các quyết định quan trọng (Case #6) giúp Agent không hỏi lại những gì đã thống nhất.\n"
+    md_content += "- **Semantic Memory**: Cung cấp kiến thức chuyên biệt (Case #4, #5) mà model GPT không được train sẵn (vd: chính sách công ty cụ thể).\n"
+    md_content += "- **Short-term Memory**: Duy trì mạch hội thoại và tự động cắt tỉa (Trim) để tối ưu chi phí và tránh lỗi tràn context (Case #10).\n\n"
     
-    md_content += "### 2.3. Quản lý PII, Consent, và Deletion\n"
-    md_content += "- Khi lưu PII (Thông tin định danh cá nhân) vào Profile hoặc Episodic, hệ thống cần cơ chế mã hóa hoặc Consent rõ ràng từ người dùng.\n"
-    md_content += "- Nếu User yêu cầu xóa memory (Right to be Forgotten), ta phải xóa ở **cả 4 backends**: Xóa lịch sử (Short-term), Xóa tệp JSON profile/episodic, và xóa các vectors cá nhân khỏi DB nếu có.\n\n"
+    md_content += "### 3.2. Quyền riêng tư (Privacy) & Quản lý PII\n"
+    md_content += "- **Rủi ro**: Các thông tin như địa chỉ, dị ứng, nghề nghiệp (PII) được lưu dưới dạng văn bản thuần trong JSON. Nếu hệ thống bị xâm nhập, dữ liệu này rất nhạy cảm.\n"
+    md_content += "- **Giải pháp**: Cần cơ chế mã hóa dữ liệu khi lưu (At-rest encryption) và xóa dữ liệu định kỳ (TTL). Khi người dùng yêu cầu 'Quên tôi đi', hệ thống phải xóa sạch cả file JSON và Vector DB.\n\n"
     
-    md_content += "### 2.4. Limitation kỹ thuật của kiến trúc hiện tại\n"
-    md_content += "- Việc sử dụng Prompt Injection (nhét toàn bộ profile, episodic vào prompt) không scale được nếu profile của người dùng quá lớn. Dễ bị vượt token limit của LLM.\n"
-    md_content += "- Token Trim ở Short-term đang dùng word-count x 1.3, không hoàn toàn chính xác như dùng thư viện tiktoken.\n"
+    md_content += "### 3.3. Giới hạn kỹ thuật (Limitations)\n"
+    md_content += "- Hệ thống hiện tại dùng 'Prompt Injection' để nhồi bộ nhớ vào ngữ cảnh. Nếu Profile quá lớn, chi phí Token sẽ tăng rất nhanh.\n"
+    md_content += "- Token Trim ở Short-term đang dùng thư viện tiktoken chuẩn xác.\n"
     md_content += "- LLM extraction tốn chi phí và có độ trễ cao (phải gọi thêm 1 API call với Structured Output sau mỗi lượt hội thoại để cập nhật memory).\n"
 
     with open("BENCHMARK.md", "w", encoding="utf-8") as f:
