@@ -1,0 +1,23 @@
+# Environments
+.env
+.venv
+venv/
+env/
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Project specific data files
+# Ignoring these so user data isn't pushed to public repos
+profile.json
+episodes.json
+chroma_db/
